@@ -42,30 +42,59 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) return;
 
     setIsSubmitting(true);
+    setIsError(false);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.8 },
-        colors: ["#06b6d4", "#8b5cf6", "#ffffff"]
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: "40574e7c-f8d9-4e8f-8fe7-1a8a62563938",
+          name: name,
+          email: email,
+          message: message,
+        }),
       });
 
-      setName("");
-      setEmail("");
-      setMessage("");
+      const result = await response.json();
 
-      setTimeout(() => setIsSuccess(false), 5000);
-    }, 1500);
+      if (result.success) {
+        setIsSubmitting(false);
+        setIsSuccess(true);
+        
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.8 },
+          colors: ["#06b6d4", "#8b5cf6", "#ffffff"]
+        });
+
+        setName("");
+        setEmail("");
+        setMessage("");
+
+        setTimeout(() => setIsSuccess(false), 5000);
+      } else {
+        throw new Error(result.message || "Failed to send message");
+      }
+    } catch (error) {
+      console.error("Failed to send email:", error);
+      setIsSubmitting(false);
+      setIsError(true);
+      setErrorMessage("Failed to send message. Please try again later.");
+      setTimeout(() => setIsError(false), 5000);
+    }
   };
 
   return (
@@ -119,6 +148,12 @@ export default function Contact() {
               <h3 className="text-xl font-bold font-space text-white mb-6 flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-accent-cyan" /> Send a Message
               </h3>
+
+              {isError && (
+                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-mono flex items-center gap-2">
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
